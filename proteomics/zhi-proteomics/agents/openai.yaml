@@ -1,0 +1,7 @@
+interface:
+  display_name: "Zhi Proteomics"
+  short_description: "DIA全蛋白组、磷酸化组与K-GG泛素组分析"
+  default_prompt: "Use $zhi-proteomics to audit this DIA-NN project and build a reproducible whole-proteome/PTM analysis plan."
+
+policy:
+  allow_implicit_invocation: true
