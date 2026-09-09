@@ -36,6 +36,10 @@ For K-GG, a contemporaneous site increase plus protein decrease does not prove d
 - Use the tested universe appropriate to each layer. Do not use the whole proteome as the phosphosite-site background.
 - Correct multiple testing separately for clearly distinct hypothesis families, then label the family in every result.
 
+Declare whether the gene-set test is preranked/gene-resampling, sample/subject-resampling, competitive or self-contained. Preserve patient structure in any sample-label permutation and choose the appropriate null; do not shuffle paired samples independently. Assess inter-gene correlation with a design-compatible method such as CAMERA/ROAST or an explicitly justified sensitivity. A fixed cameraPR correlation of 0.01 is an assumption, not a measured solution to all correlation.
+
+Report leading-edge membership, set overlap/redundancy, contributing patient coverage and leave-one-subject-out stability for central pathway claims. Distinguish statistical enrichment from enzyme activity or a mechanism. Single-protein nonsignificance and pathway enrichment can coexist, but pathways are not a rescue strategy to claim success after a negative primary analysis. References: https://doi.org/10.1093/nar/gks461 and `methods-evidence.md`.
+
 ## Patient/subject heterogeneity
 
 For paired or longitudinal cohorts, calculate subject-level deltas for each layer. Use pathway-level deltas before high-dimensional sample clustering when the cohort is small.

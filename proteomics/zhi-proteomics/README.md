@@ -2,11 +2,27 @@
 
 ## 中文简介
 
-`Zhi Proteomics` 是一套面向 DIA-NN 2.6+ 的个人 Codex skill，专门处理相互匹配的 DIA 全蛋白组、磷酸化蛋白组和 K-GG/diGly 泛素组。它覆盖搜库与输出审计、分层质控、配对/复杂设计差异分析、PTM 位点定位、母蛋白校正、跨组学整合和论文级结果呈现。
+`Zhi Proteomics` 是一套以**分轮问询、证据核对和执行前确认**为起点的个人 Codex skill，面向 DIA 全蛋白组、磷酸化组和 K-GG/diGly 泛素组。尤其适合首次接触蛋白组学的用户。当前参考规范聚焦 DIA-NN 2.6.x；后续版本必须重新核对字段和参数，不承诺自动向前兼容。
 
 ## English overview
 
-`Zhi Proteomics` is a personal Codex skill for matched DIA-NN 2.6+ whole-proteome, phosphoproteome, and K-GG/diGly ubiquitinome projects. It covers search/output auditing, layered QC, paired and complex differential designs, PTM localization, parent-protein adjustment, cross-ome integration, and publication-oriented reporting.
+`Zhi Proteomics` is a question-first personal Codex skill for DIA whole-proteome, phosphoproteome and K-GG/diGly ubiquitinome projects, including beginners. It asks staged, explained questions, checks the evidence and confirms the plan before execution. Current guidance targets reviewed DIA-NN 2.6.x behavior; later versions require renewed schema/parameter review.
+
+## 新手问询 / Beginner-guided intake
+
+先从文件和日志提取已知内容，再按研究设计、样本制备、搜库、统计和交付分轮提问，通常一轮3–5个相关问题。问题附“为什么要问”和有条件的建议，允许回答“不知道”或直接提供公司SOP。已回答的问题不反复问，但新证据冲突时重新核对。
+
+Inspect files/logs first, then ask short rounds about design, preparation, search, statistics and outputs. Each question explains its purpose and offers a conditional suggestion. “Unknown” and a laboratory SOP are valid responses. Do not repeat resolved questions unless evidence conflicts.
+
+重点覆盖：物种和组织、保存、还原/烷基化（IAA/CAA）、酶切、全蛋白/PTM目标、富集、样本量、临床配对/技术重复、批次、DIA-NN版本、FASTA、修饰与搜索空间、谱库和MBR、评分/定量、各层q-value、旧缓存、QC排除、缺失值、覆盖要求、差异FDR、最小效应、共同变化、母蛋白和定位、输出与隐私。
+
+Coverage includes species/material, preservation, reduction/alkylation, digestion, PTM goals/enrichment, amounts, pairing/technical repeats, batches, engine/build, FASTA/search space, libraries/MBR, scoring/quantification, confidence levels, cache, exclusions, missingness, coverage, differential FDR/effect, common changes, parent protein/localization and output/privacy.
+
+**建议不等于确认，未知不等于没有，日志设置不等于实验事实。** 执行前汇总方案并请求确认；用户说“你来定”可授权明确提出的分析选择，但不能据此编造化学处理或临床事实。用户说“先不执行”则保持计划状态。
+
+**A proposal is not confirmation; unknown is not absent; a search setting is not a wet-lab fact.** Confirm the summarized plan before execution. Delegating statistical choices does not supply missing chemistry/clinical facts, and a hold instruction remains binding.
+
+详细问询协议 / Full interaction protocol: [`references/intake-and-confirmation.md`](references/intake-and-confirmation.md)
 
 ## 为什么重新设计 / Why it was redesigned
 
@@ -39,7 +55,15 @@ zhi-proteomics/
 ├── README.md
 ├── THIRD_PARTY_NOTICES.md
 ├── agents/openai.yaml
+├── configs/
+│   ├── question_bank.json
+│   ├── intake_state.example.json
+│   └── analysis_plan.example.json
 ├── references/
+│   ├── intake-and-confirmation.md
+│   ├── preflight-and-provenance.md
+│   ├── methods-evidence.md
+│   ├── testing-and-release.md
 │   ├── diann-2.6.md
 │   ├── whole-proteome.md
 │   ├── phosphoproteome.md
@@ -47,30 +71,25 @@ zhi-proteomics/
 │   ├── statistics.md
 │   ├── integration-reporting.md
 │   └── upstream-audit.md
-└── scripts/
-    ├── inspect_diann_project.py
-    └── validate_paired_design.py
+├── scripts/
+│   ├── inspect_diann_project.py
+│   ├── validate_paired_design.py
+│   ├── intake_questions.py
+│   └── evidence_contracts.py
+└── tests/test_contracts.py
 ```
 
 ## 安装 / Installation
 
-将仓库克隆到 Codex personal skills 目录：
+将这一整个目录安装到 `~/.codex/skills/zhi-proteomics`，更新前备份已有版本并检查本地改动。不要用递归复制无检查地覆盖独立修改。GitHub同步是另一个操作；本地版本升级不代表远端也已更新。
 
-Clone the repository into the Codex personal skills directory:
-
-```bash
-git clone https://github.com/xenorexq/bioSkills.git
-cp -R bioSkills/proteomics/zhi-proteomics ~/.codex/skills/zhi-proteomics
-```
-
-也可以直接将本目录复制到 `~/.codex/skills/zhi-proteomics`。重新打开任务后，Codex 会从 `SKILL.md` 的名称和描述发现它。
-
-Alternatively copy this directory directly to `~/.codex/skills/zhi-proteomics`. Codex discovers it from the name and description in `SKILL.md` when a new task loads skills.
+Install this complete folder at `~/.codex/skills/zhi-proteomics`, backing up and reviewing local differences before an update. Do not overwrite independent edits blindly. GitHub synchronization is separate; a local update does not imply a remote release.
 
 ## 使用示例 / Example prompts
 
 ```text
 $zhi-proteomics 审查这个 DIA-NN 2.6 项目，并解释所有 warning、q-value 和矩阵。
+$zhi-proteomics 我第一次做蛋白组学，请先分轮询问样本制备、搜库和分析目标，解释建议，确认后再运行。
 $zhi-proteomics 为配对原发-复发队列建立全蛋白组差异分析流程。
 $zhi-proteomics 分析 DIA 磷酸化组，分别输出 phosphosite DPA 和母蛋白校正后的 DPU。
 $zhi-proteomics 分析 K-GG 泛素组，并检查 NEDD8/ISG15、IAA artifact 和母蛋白变化。
@@ -79,6 +98,7 @@ $zhi-proteomics 整合 whole proteome、phosphoproteome 和 ubiquitinome，生�
 
 ```text
 $zhi-proteomics audit this DIA-NN 2.6 project and explain its warnings, q-values, and matrices.
+$zhi-proteomics I am new to proteomics. Ask staged questions about preparation, search and design, explain suggestions, and confirm the plan before running.
 $zhi-proteomics build a paired whole-proteome differential workflow for primary versus recurrent tumors.
 $zhi-proteomics analyze this DIA phosphoproteome and report phosphosite DPA and parent-protein-adjusted DPU separately.
 $zhi-proteomics analyze this K-GG ubiquitinome and audit NEDD8/ISG15, IAA artifacts, and parent-protein changes.
@@ -105,9 +125,42 @@ python scripts/validate_paired_design.py metadata.csv \
   --expected-conditions Primary,Recurrent
 ```
 
-两个脚本均为只读诊断，不会修改原始数据。
+列出下一轮问询（例子中的建议尚未确认，脚本不会授权执行）：
 
-Both scripts are read-only diagnostics and do not modify source data.
+List the next question round (example proposals are unconfirmed; the selector never authorizes execution):
+
+```bash
+python scripts/intake_questions.py --mode whole --stage analysis \
+  --state configs/intake_state.example.json
+```
+
+若有补测／重复针，用明确的生物样本和run列检查，不自动合并强度：
+
+When reinjections exist, explicitly identify biological specimens and runs; the validator does not aggregate intensities:
+
+```bash
+python scripts/validate_paired_design.py metadata.tsv \
+  --sample sample_id --subject subject_id --condition condition \
+  --biosample biosample_id --run run_id --expected-conditions Primary,Recurrent
+```
+
+所有诊断脚本均只读，不修改原始数据。问询和计划JSON模板必须填写/确认后才用于项目，不是可直接执行的默认方案。
+
+All diagnostic scripts are read-only. Intake/plan JSON templates require completion and confirmation; they are not ready-to-execute default protocols.
+
+## 测试和限制 / Tests and limitations
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+测试覆盖：建议不能自动成为确认、未知不重复追问或补成默认值、pilot不能越过身份冲突、NA标记、技术重复、配对方向、共同变化分母、位点/前体身份、固定C质量、缓存参数变更和污染物成员顺序。
+
+Tests cover unconfirmed proposals, retained unknowns, pilot/identity boundaries, missing markers, technical replicates, contrast direction, common-change denominators, site/precursor identity, fixed-C masses, cache changes and contaminant member ordering.
+
+这些是确定性实现测试，不代表已完成统计FDR/位点FLR大规模benchmark、Windows实机搜库认证或新手用户行为评测。后续验证方案见 [`references/testing-and-release.md`](references/testing-and-release.md)。本skill提供问询、审查和分析规范及辅助脚本，不冒充一个覆盖所有模式的一键自动分析软件。
+
+These deterministic tests do not constitute a statistical FDR/FLR benchmark, Windows search certification or completed novice-user behavioral evaluation. See the testing/release reference for the remaining validation plan. This skill provides guidance and tested helpers, not a certified one-click implementation of every supported analytical mode.
 
 ## 依赖 / Dependencies
 
@@ -117,8 +170,10 @@ The scripts primarily use the Python standard library. `pyarrow` is required for
 
 ## 版本与依据 / Version and evidence
 
-- Skill version: `0.1.0`
-- Audit date: `2026-09-08`
+- Skill version: `0.2.0`
+- Review date: `2026-09-09`
+- 本版变化 / This release: staged intake; chemistry/search preflight; warning levels; separate site and evidence IDs; model/common-change/zero-result contracts; regression tests.
+- Methods adaptation register: [`references/methods-evidence.md`](references/methods-evidence.md)
 - DIA-NN guidance: https://github.com/vdemichev/diann
 - QuantUMS: https://doi.org/10.1038/s41587-026-03131-2
 - DEqMS DIA protocol: https://doi.org/10.1038/s41596-026-01349-7

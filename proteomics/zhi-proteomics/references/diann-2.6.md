@@ -4,6 +4,8 @@ Use this reference for DIA-NN setup, log review, q-value interpretation, output 
 
 Primary source: https://github.com/vdemichev/diann (reviewed 2026-09-08).
 
+For beginner intake and any unresolved study-specific facts, first read `intake-and-confirmation.md`. For chemistry/search reconciliation, warning levels and cache boundaries, read `preflight-and-provenance.md`. The guidance targets reviewed 2.6.x behavior; the phrase 2.6+ in older documentation is not a promise of forward compatibility.
+
 ## Before running or interpreting
 
 Record:
@@ -24,7 +26,7 @@ DIA-NN 2.6 documentation describes a two-stage workflow:
 1. Generate a predicted library from the FASTA as its own pipeline step. Save the predicted `.speclib` and the exact digest/modification settings.
 2. Analyze the raw files against that saved library with FASTA annotation, MBR/reanalysis and matrix generation as appropriate. Do not activate FASTA digest again in the raw-analysis step.
 
-A run that combines in-silico prediction and raw analysis may complete while printing an `incorrect settings` warning. Treat the outputs as provisional until the warning is resolved or a matched two-step run shows the result is stable.
+A run that combines in-silico prediction and raw analysis may complete while printing an `incorrect settings` warning. Treat it as a version-specific review item, not automatic proof of incorrect quantities. Historical 1.9.1 behavior was corrected in 1.9.2 while a warning remained (see that release's fix list); follow current guidance for new searches. Existing data require explicit pilot authorization or matched validation, not silent approval. Compare changing only task separation separately from changing scoring, chemistry or library content.
 
 An empirical library generated from the project's DIA data is a different artifact from the whole-FASTA predicted library. Name and preserve both; do not call fragment rows, precursors, and proteins by the same count.
 
@@ -78,7 +80,7 @@ The wide matrices are intended as ready-to-use normalized summaries, but still r
 ## Decoys and contaminants
 
 - Decoys calibrate scores and may be absent from the normal main report. Do not search the wide protein matrix for reverse accessions as a substitute for reading `Decoy` and the run log.
-- Contaminants are a database/annotation contract. When FASTA accessions are tagged, use the exact tag such as `CONTAMINANT_`. For a protein-group matrix, exclude groups led by a tagged contaminant and retain the decision log.
+- Contaminants are a database/annotation contract. Classify all-contaminant, noncontaminant and mixed groups using the exact tag, independently of member order. All-contaminant groups may be excluded under the recorded policy; mixed groups need review. Leading-prefix-only filtering is a legacy project policy, not a universal rule.
 - A precursor can map to both a biological protein and a contaminant duplicate. Removing every row whose `Protein.Ids` merely contains the tag may discard valid shared evidence; distinguish contaminant-led groups from mixed mappings.
 
 ## Required audit outputs

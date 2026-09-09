@@ -18,7 +18,7 @@ Never replace raw run names without retaining a reversible mapping table.
 ## Cleaning
 
 1. Verify that all expected runs appear exactly once and no sample name is duplicated.
-2. Remove decoys if present and exclude contaminant-led protein groups using the configured FASTA tag.
+2. Remove decoys if present; classify protein groups by all-contaminant, mixed or noncontaminant membership using the configured FASTA tag. Exclude all-contaminant groups under the recorded policy and review mixed groups; do not change classification when member order changes.
 3. Retain `Protein.Group`, matched accessions, gene annotation, sequence counts, and proteotypic-sequence counts.
 4. Convert explicit zero/unquantified values to missing before log transformation. Do not convert missing values to biological zero.
 5. Use log2 for distributional QC and linear modeling.

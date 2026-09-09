@@ -13,6 +13,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from collections import Counter
+from evidence_contracts import contaminant_class
 
 
 TEXT_FILES = {
@@ -31,6 +33,8 @@ def find_file(root: Path, name: str) -> Path | None:
     if direct.is_file():
         return direct
     matches = sorted(root.rglob(name), key=lambda p: (len(p.parts), str(p)))
+    if len(matches)>1:
+        raise ValueError(f'Ambiguous {name}: {len(matches)} matches. Select one exact output directory, not a project containing several runs.')
     return matches[0] if matches else None
 
 
@@ -38,35 +42,46 @@ def count_tsv(path: Path, contaminant_tag: str) -> dict[str, Any]:
     rows = 0
     malformed = 0
     contaminants = 0
+    classes = Counter()
+    modification_sequences = set()
+    metadata_names = {'Protein.Group','Protein.Ids','Protein.Names','Genes','First.Protein.Description',
+        'N.Sequences','N.Proteotypic.Sequences','Proteotypic','Stripped.Sequence','Modified.Sequence',
+        'Precursor.Charge','Precursor.Id','Gene','Gene.Names'}
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
         header = next(reader)
         width = len(header)
+        pg_index = header.index('Protein.Group') if 'Protein.Group' in header else None
+        mod_index = header.index('Modified.Sequence') if 'Modified.Sequence' in header else None
         for row in reader:
             rows += 1
             if len(row) != width:
                 malformed += 1
-            if row and row[0].startswith(contaminant_tag):
+            if pg_index is not None and len(row)>pg_index:
+                classes[contaminant_class(row[pg_index],contaminant_tag)] += 1
+            if pg_index is not None and len(row)>pg_index and row[pg_index].startswith(contaminant_tag):
                 contaminants += 1
+            if mod_index is not None and len(row)>mod_index:
+                modification_sequences.add(row[mod_index])
 
-    if path.name.endswith("pg_matrix.tsv"):
-        metadata_columns = 6
-    elif path.name.endswith("pr_matrix.tsv"):
-        metadata_columns = 10
-    elif path.name.endswith(("gg_matrix.tsv", "unique_genes_matrix.tsv")):
-        metadata_columns = 3
-    else:
-        metadata_columns = 0
-
-    samples = header[metadata_columns:] if metadata_columns else []
+    known_metadata = [x for x in header if x in metadata_names]
+    samples = [x for x in header if x not in metadata_names]
+    modification_counts=Counter()
+    for sequence in modification_sequences:
+        modification_counts.update(set(re.findall(r'UniMod:\d+',sequence)))
     return {
         "rows": rows,
         "columns": width,
-        "metadata_columns_assumed": metadata_columns,
+        "metadata_columns": known_metadata,
+        "schema_note": "Candidate sample columns are identified by named metadata exclusion; confirm against sample manifest, especially for new schema versions.",
         "sample_columns": len(samples),
         "sample_headers": samples,
         "malformed_rows": malformed,
         "leading_contaminant_rows": contaminants,
+        "contaminant_group_classes": dict(classes),
+        "unique_modified_sequences":len(modification_sequences),
+        "modification_sequence_counts":dict(modification_counts),
+        "chemistry_caution":"Sequence markers describe searched/reported species, not actual wet-lab alkylation",
     }
 
 
@@ -86,12 +101,25 @@ def inspect_log(path: Path) -> dict[str, Any]:
     match = re.search(r"(\d+) files will be processed", text)
     if match:
         processed = int(match.group(1))
+    cmd = command or ''
+    in_command = lambda flag: bool(re.search(r'(?:^|\s)'+re.escape(flag)+r'(?:\s|$)',cmd))
+    findings = []
+    if in_command('--fasta-search') and in_command('--predictor') and (in_command('--dir') or in_command('--f')):
+        findings.append({'severity':'pilot_review','code':'combined_prediction_search','evidence':'Prediction and raw input flags in one command','resolution':'Check exact version; separate workflow comparison, not automatic invalidation'})
+    if command and not in_command('--fixed-mod') and not in_command('--unimod4'):
+        findings.append({'severity':'pilot_review','code':'fixed_modification_not_explicit','evidence':'No recognized explicit fixed-modification flag','resolution':'Ask for SOP; inspect actual sequences/masses and version defaults. Absence of flag is not proof of no alkylation.'})
+    if in_command('--use-quant'):
+        findings.append({'severity':'pilot_review','code':'cache_reuse_requested','evidence':'--use-quant','resolution':'Check cache fingerprints before reuse; fresh output/temp for a changed-settings validation'})
+    if version and not version.startswith('2.6.'):
+        findings.append({'severity':'review','code':'version_outside_documented_2_6_x','evidence':version,'resolution':'Reconcile current official output and CLI contracts before analysis'})
     return {
         "version": version,
         "files_announced": processed,
         "command": command,
         "warnings": warnings,
         "errors": errors,
+        "findings": findings,
+        "chemistry_status": "unknown_until_SOP_or_user_confirmation",
     }
 
 

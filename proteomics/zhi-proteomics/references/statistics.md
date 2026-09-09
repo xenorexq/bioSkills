@@ -17,6 +17,20 @@ Before fitting models, state:
 
 Technical injections do not increase biological sample size. Repeated samples from one subject must stay together in validation folds.
 
+## Questions and model routing
+
+Read `intake-and-confirmation.md` and confirm the question being tested before choosing thresholds. Project examples such as 12 complete pairs, 80% common support or 1.5-fold are not universal defaults.
+
+| Design / question | Appropriate route | Important restriction |
+| --- | --- | --- |
+| One primary and recurrent specimen per patient | patient-adjusted model, or observed complete-pair deltas with an intercept | no within-patient P value from one measurement per condition |
+| Independent biological groups | condition model with estimable covariates | require observations in both groups; do not assume independence for matched subjects |
+| Longitudinal, nested or repeated injections | explicit subject/biosample/run hierarchy and compatible mixed or repeated-measures model | technical replicates are not biological n; diagnose actual design rank |
+| Extensive condition-dependent missingness | design-compatible dropout/censored model and/or separate detection analysis | neither blanket low imputation nor complete-case selection guarantees unbiased inference |
+| User-requested nonpaired reanalysis of paired data | clearly labeled sensitivity only | retain paired primary and compare same observations separately from changed coverage |
+
+For a delta-matrix limma model, supply the actual average log2 abundance as `Amean` if using an abundance-dependent variance trend; the mean delta is not the mean abundance. Compare empirical effect/standard-error calculations with an independent implementation on synthetic data. Model coefficients, raw P, BH FDR and minimum-effect tests are distinct outputs.
+
 ## Metadata and design checks
 
 Reject or pause a design when:
@@ -26,7 +40,7 @@ Reject or pause a design when:
 - condition is fully confounded with batch, acquisition date, enrichment plate, or instrument;
 - the model matrix is rank deficient;
 - the proposed covariate count is excessive for the number of independent subjects;
-- treatment between longitudinal samples changes the scientific meaning of the contrast and is undocumented.
+- treatment between longitudinal samples changes the scientific meaning of the contrast and is undocumented: block causal/treatment-specific interpretation; a user-approved descriptive pilot may remain possible.
 
 Prefer modeling known batch effects in the same inferential model. Use batch-removal functions only to create explicitly labeled visualization matrices, never as automatic preprocessing for the test.
 
@@ -58,6 +72,8 @@ Primary options:
 2. Use a feature-level model that handles missingness and repeated structure when its assumptions and converter are compatible with the data.
 3. Analyze paired detection status separately for features with strong condition-dependent presence/absence.
 
+Record each protein's informative subjects and coverage. Complete-pair inference concerns observable pairs and can select higher-abundance proteins or a different patient subset; disclose this estimand. Use proDA/MSstats/msqrob2-type alternatives only when assumptions, versioned converters and patient structure fit the task. Valid uncertainty-aware missing-data models are not prohibited by the ban on treating simple imputed intensities as observed measurements.
+
 Do not use imputation to create evidence for the primary p-value. Median/KNN/minimum/downshifted imputation may be used for a labeled visualization or pre-specified sensitivity analysis. Compare effect direction, ranking, and influential subjects across analyses.
 
 For paired binary detection, use an exact McNemar-type test when counts permit and BH-correct the declared family. Do not assign an artificial fold change to a feature never quantified in one condition.
@@ -85,6 +101,12 @@ Relevant methods:
 - Plot the p-value distribution, mean-variance relation, residuals for representative features, and significance versus observation count.
 - Use leave-one-subject-out influence analysis for clinical paired cohorts and flag results driven by one subject.
 - Distinguish confirmatory from exploratory contrasts. Do not choose the primary model after inspecting which version gives more discoveries significant hits.
+
+## Common changes and zero discoveries
+
+Keep three endpoints separate: individual observed FC, cohort-average differential abundance, and cross-subject consistency. For descriptive all-subject/majority changes, confirm the FC and required fraction; report both observed-pair and all-subject denominators. NA contributes neither up nor down. Never call a descriptive intersection a replicated individual significance result.
+
+If no proteins pass the predeclared rule, produce valid empty significant tables plus full tested results, effect/interval distributions and diagnostics. Do not automatically lower FDR, change cohorts/methods or force Top20 candidates. Optional ranking lists must state all items may be nonsignificant. Assess whether design, measurement quality, sample size or heterogeneity limit inference; no post-hoc observed-power claim proves absence of effect.
 
 ## Biomarker and machine-learning boundary
 

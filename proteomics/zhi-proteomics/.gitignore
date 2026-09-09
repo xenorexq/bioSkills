@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.DS_Store
+intake_state.json
+analysis_plan.json

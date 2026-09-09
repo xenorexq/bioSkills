@@ -30,9 +30,7 @@ Do not transfer whole-proteome protein-group filtering rules directly to K-GG si
 
 ## Site table
 
-A stable K-GG site key should contain:
-
-`leading accession | gene | K position | UniMod:121 | peptidoform`
+Use `FASTA version/hash | accession/isoform | K | position | UniMod:121` as the site key. Keep fully modified peptide sequence as a separate peptidoform key and charge as part of the precursor key. Maintain an explicit mapping table, so multiple charges/peptide lengths do not inflate unique site counts. Gene is an annotation; a combined site/peptidoform row is an evidence record rather than a new site.
 
 Retain ambiguous mappings and isoform-specific coordinates rather than collapsing them silently. Separate:
 

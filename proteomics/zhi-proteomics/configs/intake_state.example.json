@@ -1,0 +1,10 @@
+{
+  "mode": "whole",
+  "pilot_authorized": false,
+  "answers": {
+    "alkylation": {"value": null, "status": "unknown", "source": "not supplied", "asked": false},
+    "search_modifications": {"value": null, "status": "unknown", "source": "log not inspected", "asked": false},
+    "differential_fdr": {"value": 0.05, "status": "proposed", "source": "suggestion only, not approved", "asked": false},
+    "plan_approval": {"value": null, "status": "unknown", "source": "not requested", "asked": false}
+  }
+}

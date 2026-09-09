@@ -28,9 +28,13 @@ Do not borrow a MaxQuant class-I threshold without documenting that DIA-NN's loc
 
 ## Site identity
 
-A stable site identifier should include:
+A site key is distinct from its evidence key:
 
-`leading accession | gene | residue | protein position | modification | peptidoform`
+- `site_id = FASTA version/hash | accession/isoform | residue | position | modification`
+- `peptidoform_id = fully modified peptide sequence` under a recorded modification convention
+- `precursor_id = peptidoform_id | charge` (add channel when multiplexed)
+
+Use a separate precursor-to-site mapping table. Gene names are annotation, not immutable identity. Different charges, missed-cleavage peptides or co-modified forms can support the same site without creating multiple unique sites. A row retaining all these fields is an evidence record, not a distinct site count. Do not sum overlapping evidence blindly.
 
 Retain all candidate protein mappings. Do not collapse ambiguous isoform positions into one site. For multiply modified peptides, retain the peptidoform and the contribution of each localized site; a second modification can drive a peptidoform change attributed to the phosphosite.
 
